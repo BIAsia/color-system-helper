@@ -20,8 +20,12 @@
     "commandId" : "addColors"
   },{
     "type" : "menu",
-    "label" : "save asset colors to file",
+    "label" : "save asset colors to csv",
     "commandId" : "saveColors"
+  },{
+    "type" : "menu",
+    "label" : "generate asset artboard",
+    "commandId" : "generateArtboard"
   }],
   "version" : "0.7.0"
 }

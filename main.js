@@ -4,7 +4,7 @@
  */
 
 
-const {Rectangle, Color, Text} = require("scenegraph"); 
+const {Rectangle, Color, Text, Artboard} = require("scenegraph"); 
 let commands = require("commands");
 const { alert } = require("./lib/dialogs.js");
 const fs = require("uxp").storage.localFileSystem;
@@ -331,10 +331,105 @@ function generateTokenInCSV(colorObj){
 
 }
 
+function ArtboardGenerateHandlerFunction(selection, rootNode){
+    var assets = require("assets"), allColors = assets.colors.get();
+    rootNode.children.some((childNode)=>{
+        if (childNode.name == "colorAssets"){
+            childNode.removeFromParent()
+            return true;
+        }
+    })
+    
+    const newBoard = new Artboard();
+    newBoard.name = "colorAssets";
+    newBoard.width = 600;
+    newBoard.height = 80*(allColors.length + 3);
+    newBoard.fill = new Color("#ffffff");
+    rootNode.addChild(newBoard, 0);
+    newBoard.moveInParentCoordinates(-20000, -20000);
+    adaptColorList(newBoard, selection, allColors);
+    
+    
+/*
+    */
+    
+}
+
+function adaptColorList(artboard, selection, colorList){
+    selection.items = [artboard];
+    
+    let x = 100, y = 120;
+    const newName = new Text();
+    newName.text = "Color Assets";
+    newName.styleRanges = [
+        {
+          length: newName.text.length,
+          fill: new Color("#000000"),
+          fontStyle: "Semibold",
+          fontSize: 36
+        }
+      ];
+
+    selection.insertionParent.addChild(newName);
+    newName.moveInParentCoordinates(x, y);
+
+    y = artboard.height - 60;
+
+    for (var i = 0; i < colorList.length ; i++){
+        y -= 80;
+        generateColorLayer(colorList[i], x, y, selection);
+    }
+}
+
+function generateColorLayer(color, x, y, selection){
+    const newRect = new Rectangle();
+	newRect.width = 32;
+	newRect.height = 32;
+    newRect.fill = color.color;
+    newRect.stroke = null;
+    newRect.name = color.name;
+
+    selection.insertionParent.addChild(newRect);
+    newRect.moveInParentCoordinates(x, y);
+
+    const newName = new Text();
+    newName.text = color.name;
+    newName.styleRanges = [
+        {
+          length: newName.text.length,
+          fill: new Color("#666666"),
+          fontStyle: "Semibold",
+          fontSize: 16
+        }
+      ];
+
+    selection.insertionParent.addChild(newName);
+    newName.moveInParentCoordinates(x+48, y+12);
+
+    const newHex = new Text();
+    const alpha = (color.color.toRgba().a/255).toFixed(2);
+    if (alpha == 1.00) 
+        newHex.text = color.color.toHex(true);
+    else newHex.text = color.color.toHex(true) + " " + alpha;
+    newHex.styleRanges = [
+        {
+          length: newHex.text.length,
+          fill: new Color("#a0a0a0"),
+          fontSize: 12
+        }
+      ];
+
+    selection.insertionParent.addChild(newHex);
+    newHex.moveInParentCoordinates(x+48, y+30);
+
+
+}
+
 module.exports = {
     commands: {
         addColors: ColorAddHandlerFunction,
         saveColors: ColorSaveHandlerFunction,
+        generateArtboard: ArtboardGenerateHandlerFunction
         //sortColors: SortColorAssetsHandlerFunction,
         //outputColors: OutColorAssetsHandlerFunction,
         //fillColors: FillColorHandlerFunction,
