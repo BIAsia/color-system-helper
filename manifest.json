@@ -16,16 +16,16 @@
   } ],
   "uiEntryPoints" : [ {
     "type" : "menu",
-    "label" : "add selected colors",
+    "label" : "generate asset artboard",
+    "commandId" : "generateArtboard"
+  },{
+    "type" : "menu",
+    "label" : "update color assets",
     "commandId" : "addColors"
   },{
     "type" : "menu",
     "label" : "save asset colors to csv",
     "commandId" : "saveColors"
-  },{
-    "type" : "menu",
-    "label" : "generate asset artboard",
-    "commandId" : "generateArtboard"
   }],
   "version" : "0.7.0"
 }
