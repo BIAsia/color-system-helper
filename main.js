@@ -5,6 +5,7 @@
 
 
 const {Rectangle, Color, Text, Artboard} = require("scenegraph"); 
+const storageHelper = require('./lib/storage-helper');
 let commands = require("commands");
 const { alert } = require("./lib/dialogs.js");
 const fs = require("uxp").storage.localFileSystem;
