@@ -16,6 +16,10 @@
   } ],
   "uiEntryPoints" : [ {
     "type" : "menu",
+    "label" : "import saved asset from file",
+    "commandId" : "importAsset"
+  },{
+    "type" : "menu",
     "label" : "generate asset artboard",
     "commandId" : "generateArtboard"
   },{
@@ -26,6 +30,14 @@
     "type" : "menu",
     "label" : "save asset colors to csv",
     "commandId" : "saveColors"
+  },{
+    "type" : "menu",
+    "label" : "save asset to file",
+    "commandId" : "saveAsset"
+  },{
+    "type" : "menu",
+    "label" : "IMPORT DEFAULT COLOR",
+    "commandId" : "importDefaultColor"
   }],
-  "version" : "0.9.1"
+  "version" : "0.9.0"
 }

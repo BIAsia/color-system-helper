@@ -5,7 +5,6 @@
 
 
 const {Rectangle, Color, Text, Artboard} = require("scenegraph"); 
-const storageHelper = require('./lib/storage-helper');
 let commands = require("commands");
 const { alert } = require("./lib/dialogs.js");
 const fs = require("uxp").storage.localFileSystem;
@@ -14,6 +13,58 @@ var newColorNum, renameColorNum;
 var fillList = [], fillNodeList = [];
 var colorList = [], colorNodeList = [];
 var path = [], tokenChart;
+
+
+async function importAssetFromFile(){
+    newColorNum=0;renameColorNum=0;
+    var allColors = await getColorFromFile();
+    //var allColors = storageHelper.get('colorAsset', defaultColors);
+    console.log(allColors);
+    createAssetFromJSON(allColors);
+}
+
+
+async function importAssetFromPlugin(){
+    newColorNum=0;renameColorNum=0;
+    var allColors = await getDefaultColorFromFile();
+    //var allColors = storageHelper.get('colorAsset', defaultColors);
+    console.log(allColors);
+    createAssetFromJSON(allColors);
+}
+
+
+function createAssetFromJSON(allColors){
+    for (let i = 0; i < allColors.length; i++){
+        console.log(allColors[i].color.value);
+        const newColor = new Color(allColors[i].color.value);
+        console.log(newColor);
+        addColorToAsset(allColors[i].name, newColor);
+    }
+    showAlert(newColorNum, renameColorNum);
+}
+
+
+async function getColorFromFile(){
+    let assetFile = await fs.getFileForOpening();
+    const contents = await JSON.parse((await assetFile.read()));
+    return contents;
+}
+
+async function getDefaultColorFromFile(){
+    let defaultColorAsset;
+    let dataFolder = await fs.getPluginFolder();
+    let defaultFile = await dataFolder.getEntry('default-color-asset.json');
+    defaultColorAsset = JSON.parse((await defaultFile.read()));
+    return defaultColorAsset;
+}
+
+async function saveCurrentAsset(){
+    var allColors = assets.colors.get();
+    const colorFile = await fs.getFileForSaving("color-asset.json");
+    await colorFile.write(JSON.stringify(allColors));
+}
+
+
 
 function ColorAddHandlerFunction(selection) { 
     newColorNum=0;renameColorNum=0;
@@ -37,25 +88,47 @@ function traverseChildrenForColors(root){
         if (root.fill.constructor.name == "Color") console.log("Color");
         if (root.constructor.name == "Rectangle" && root.fill.constructor.name == "Color" && root.hasDefaultName == false){
             // only rename
-            if (assets.colors.delete(new Color(root.fill))==1) {
-                console.log("color deleted")
-                renameColorNum++;
-                assets.colors.add({name: root.name, color: root.fill});
-                console.log("color " + root.name + " is added");
-            }
+            addColorToAsset(root.name, root.fill);
+            // if (assets.colors.delete(new Color(root.fill))==1) {
+            //     console.log("color deleted")
+            //     renameColorNum++;
+            //     assets.colors.add({name: root.name, color: root.fill});
+            //     console.log("color " + root.name + " is added");
+            // }
             
-            if (assets.colors.delete(new Color(root.fill))==1) {
-                console.log("color deleted")
-                renameColorNum++;
-                newColorNum--;
-            }
-            assets.colors.add({name: root.name, color: root.fill});
-            console.log("color " + root.name + " is added");
-            newColorNum++;
+            // if (assets.colors.delete(new Color(root.fill))==1) {
+            //     console.log("color deleted")
+            //     renameColorNum++;
+            //     newColorNum--;
+            // }
+            // assets.colors.add({name: root.name, color: root.fill});
+            // console.log("color " + root.name + " is added");
+            // newColorNum++;
             
         }
     }
 }
+
+function addColorToAsset(colorName, colorValue){
+    if (assets.colors.delete(new Color(colorValue))==1) {
+        console.log("color deleted")
+        renameColorNum++;
+        assets.colors.add({name: colorName, color: colorValue});
+        console.log("color " + colorName + " is added");
+    } else {
+        assets.colors.add({name: colorName, color: colorValue});
+        console.log("color " + colorName + " is added");
+        newColorNum++;
+    }
+    
+    // if (assets.colors.delete(new Color(colorValue))==1) {
+    //     console.log("color deleted")
+    //     renameColorNum++;
+    //     newColorNum--;
+    // }
+    
+}
+
 
 function SortColorAssetsHandlerFunction(){
     var assets = require("assets"), allColors = assets.colors.get();
@@ -278,6 +351,8 @@ async function ColorSaveHandlerFunction(selection){
     
     const newFile = await fs.getFileForSaving("color-asset.csv");
     await newFile.write(colorChart);
+
+    
  
 }
 
@@ -334,6 +409,7 @@ function generateTokenInCSV(colorObj){
 
 function ArtboardGenerateHandlerFunction(selection, rootNode){
     var assets = require("assets"), allColors = assets.colors.get();
+    console.log(allColors);
     rootNode.children.some((childNode)=>{
         if (childNode.name == "colorAssets"){
             childNode.removeFromParent()
@@ -428,9 +504,12 @@ function generateColorLayer(color, x, y, selection){
 
 module.exports = {
     commands: {
+        importAsset: importAssetFromFile,
+        saveAsset: saveCurrentAsset,
         addColors: ColorAddHandlerFunction,
         saveColors: ColorSaveHandlerFunction,
-        generateArtboard: ArtboardGenerateHandlerFunction
+        generateArtboard: ArtboardGenerateHandlerFunction,
+        importDefaultColor: importAssetFromPlugin
         //sortColors: SortColorAssetsHandlerFunction,
         //outputColors: OutColorAssetsHandlerFunction,
         //fillColors: FillColorHandlerFunction,
