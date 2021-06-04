@@ -153,8 +153,13 @@ function FillColorHandlerFunction(selection, isDark){
     let select = selection.items;
     colorList = [], colorNodeList = [];
     //fillList = [], fillNodeList = [];
-    select.forEach((root)=>{traverseChildrenToFindFill(root);});
-    outputColorDetails(colorList, selection, isDark);
+    
+    select.forEach((root)=>{
+        traverseChildrenToFindFill(root);
+        outputColorDetails(colorList, selection, isDark);
+        colorList = [], colorNodeList = [];
+    });
+    
     //outputNodeDetails(fillList, fillNodeList);
 }
 
