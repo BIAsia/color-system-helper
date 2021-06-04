@@ -149,12 +149,12 @@ function OutColorAssetsHandlerFunction(){
     
 }
 
-function FillColorHandlerFunction(selection){
+function FillColorHandlerFunction(selection, isDark){
     let select = selection.items;
     colorList = [], colorNodeList = [];
     //fillList = [], fillNodeList = [];
     select.forEach((root)=>{traverseChildrenToFindFill(root);});
-    outputColorDetails(colorList, selection);
+    outputColorDetails(colorList, selection, isDark);
     //outputNodeDetails(fillList, fillNodeList);
 }
 
@@ -190,12 +190,16 @@ function traverseChildrenToFindFill(root){
 }
 
 // 输出 color 信息
-function outputColorDetails(colorList, selection){
+function outputColorDetails(colorList, selection, isDark){
     for (var i = 0; i < colorList.length; i++) {
         let color = colorList[i];
         var bounds = getSymbolPos(color.source);
-        console.log(bounds);
-        createColorExample(color, bounds, selection);
+        bounds.x += i*300;
+        bounds.y += 12;
+        // console.log(bounds);
+        let textColor = new Color("#000000");
+        if (isDark) textColor = new Color("#ffffff");
+        createColorExample(color, bounds, selection, textColor);
     }
 }
 
@@ -203,8 +207,8 @@ function outputColorDetails(colorList, selection){
 function getSymbolPos(child){
     if (child.symbolId != null){
         // is symbol
-        console.log(child.name);
-        console.log(child.boundsInParent);
+        // console.log(child.name);
+        // console.log(child.boundsInParent);
         return child.boundsInParent;
     }
     else if (child.parent != null){
@@ -214,10 +218,10 @@ function getSymbolPos(child){
 }
 
 // 画颜色示意矩形
-function createColorExample(colorObj, bound, selection){
+function createColorExample(colorObj, bound, selection, textColor){
     const newName = new Text();
     newName.text = findTokenLeastName(colorObj.source);
-    console.log(newName);
+    // console.log(newName);
     newName.styleRanges = [
         {
           length: newName.text.length,
@@ -241,13 +245,13 @@ function createColorExample(colorObj, bound, selection){
     }
     else if (colorObj.isFill) newComment.text = findColorName(colorObj.fill);
     else if (colorObj.isStroke) newComment.text = findColorName(colorObj.stroke);
-    console.log(newComment);
+    // console.log(newComment);
     newComment.styleRanges = [
         {
           length: newComment.text.length,
           fontFamily: "苹方-简",
           fontStyle: "Semibold",
-          fill: new Color("#000"),
+          fill: textColor,
           fontSize: 16
         }
       ];
@@ -345,6 +349,11 @@ async function showAlert(newColorNum, renameColorNum){
     "Go to Assets Panel to see your colors :D"); //[2]
 }
 
+async function successAlert(description){
+    await alert("success!", //[1]
+    description); //[2]
+}
+
 async function ColorSaveHandlerFunction(selection){
     //console.log(allColors);
     let colorChart = generateColorInCSV();
@@ -425,7 +434,7 @@ function ArtboardGenerateHandlerFunction(selection, rootNode){
     rootNode.addChild(newBoard, 0);
     newBoard.moveInParentCoordinates(-20000, -20000);
     adaptColorList(newBoard, selection, allColors);
-    
+    successAlert("check the selection artboard to see");
     
 /*
     */
@@ -499,20 +508,160 @@ function generateColorLayer(color, x, y, selection){
     selection.insertionParent.addChild(newHex);
     newHex.moveInParentCoordinates(x+48, y+30);
 
-
 }
 
-module.exports = {
-    commands: {
-        importAsset: importAssetFromFile,
-        saveAsset: saveCurrentAsset,
-        addColors: ColorAddHandlerFunction,
-        saveColors: ColorSaveHandlerFunction,
-        generateArtboard: ArtboardGenerateHandlerFunction,
-        importDefaultColor: importAssetFromPlugin
-        //sortColors: SortColorAssetsHandlerFunction,
-        //outputColors: OutColorAssetsHandlerFunction,
-        //fillColors: FillColorHandlerFunction,
-        //saveComponentColors: ComponentColorSaveHandlerFunction
+/* -------------------------------------------------------------------------- */
+/*                                    panel                                   */
+/* -------------------------------------------------------------------------- */
+let panel;
+const {editDocument} = require("application");
+
+
+function create(){
+    const html=`
+    <style>
+        div {
+            margin-bottom: 20px;
+        }
+        .wrap { flex-wrap: wrap; }
+        .show {
+            display: block;
+        }
+        .hide {
+            display: none;
+        }
+        #warning{
+            border: 1px dashed #ddd;
+            padding: 10px 10px;
+            margin: 8px;
+            text-align: center;
+        }
+    </style>
+    <body>
+        <h3>从默认色板开始 Start from default</h3>
+        <div class="row warp">
+            <button uxp-variant="cta" id="importDefaultColor">IMPORT DEFAULT COLORS</button>
+        </div>
+        <h3>使用你自己的色板 Use your JSON</h3>
+        <div class="row warp">
+            <button uxp-variant="primary" id="saveCurrentToJSON">Save current</button>
+            <button uxp-variant="secondary" id="importFromJSON">Import</button>
+        </div>
+        <h3>附加功能 Extra</h3>
+        <div type="warp">
+            <button uxp-variant="action" id="generateArtboard">Generate Artboard</button>
+            <button uxp-variant="action" id="saveToCSV">Save as CSV</button>
+        </div>
+        <div>
+            <h3>色彩使用检查 Color Inspector</h3>
+            <div id="warning">
+                <label>select something first</label>
+            </div>
+            <form>
+
+                <button uxp-variant="action"  id="inspectOnLight">light</button>
+                <button uxp-variant="action"  id="inspectOnDark">dark</button>
+            </form>
+        </div>
+        
+        <div class="row warp"></div>
+        
+        
+    </body>
+    `;
+
+    function importDefaultColor(){
+        editDocument(
+            {editLabel: "import default color asset"},
+            importAssetFromPlugin
+        )
     }
+    function saveCurrentToJSON(){
+        editDocument(
+            {editLabel: "save current to JSON"},
+            saveCurrentAsset
+        )
+    }
+    function importFromJSON(){
+        editDocument(
+            {editLabel: "import color asset from JSON"},
+            importAssetFromFile
+        )
+    }
+    function generateArtboard(){
+        editDocument(
+            {editLabel: "generate color asset artboard"},
+            ArtboardGenerateHandlerFunction
+        )
+    }
+    function saveToCSV(){
+        editDocument(
+            {editLabel: "generate color asset artboard"},
+            ColorSaveHandlerFunction
+        )
+    }
+    function inspectColors(isDark){
+        editDocument(
+            {editLabel: "generate color asset artboard"},
+            (selection)=>{FillColorHandlerFunction(selection, isDark);}
+        )
+    }
+
+    panel = document.createElement("div");
+    panel.innerHTML = html;
+
+    panel.querySelector("#importDefaultColor").addEventListener("click", importDefaultColor);
+    panel.querySelector("#saveCurrentToJSON").addEventListener("click", saveCurrentToJSON);
+    panel.querySelector("#importFromJSON").addEventListener("click", importFromJSON);
+    panel.querySelector("#generateArtboard").addEventListener("click", generateArtboard);
+    panel.querySelector("#saveToCSV").addEventListener("click", saveToCSV);
+    panel.querySelector("#inspectOnLight").addEventListener("click", ()=>{inspectColors(false);});
+    panel.querySelector("#inspectOnDark").addEventListener("click", ()=>{inspectColors(true)});
+    
+    return panel;
+}
+
+function show(event) {
+	if (!panel) event.node.appendChild(create()); // [2]
+}
+
+function update(selection) {
+	/*
+	const { Rectangle } = require("scenegraph"); // [2]
+*/
+	const form = document.querySelector("form"); // [3]
+	const warning = document.querySelector("#warning"); // [4]
+	
+
+	if (!selection || !(selection.items[0])) { // [5]
+		form.className = "hide";
+		warning.className = "show";
+	} else {
+		form.className = "show";
+		warning.className = "hide";
+	}
+	
+}
+
+
+
+module.exports = {
+    panels: {
+		showPanel: {
+			show,
+			update
+		}
+	}
+    // commands: {
+    //     importAsset: importAssetFromFile,
+    //     saveAsset: saveCurrentAsset,
+    //     addColors: ColorAddHandlerFunction,
+    //     saveColors: ColorSaveHandlerFunction,
+    //     generateArtboard: ArtboardGenerateHandlerFunction,
+    //     importDefaultColor: importAssetFromPlugin
+    //     //sortColors: SortColorAssetsHandlerFunction,
+    //     //outputColors: OutColorAssetsHandlerFunction,
+    //     //fillColors: FillColorHandlerFunction,
+    //     //saveComponentColors: ComponentColorSaveHandlerFunction
+    // }
 };
